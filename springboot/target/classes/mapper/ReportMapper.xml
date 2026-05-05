@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.mapper.ReportMapper">
+
+    <sql id="Base_Column_List">
+        id,type,title,content,contact_name,contact_phone,address,suspect_phone,suspect_account,
+        suspect_link,evidence,amount,report_time,status,handler,handle_result,handle_time,user_id
+    </sql>
+
+    <insert id="insert" parameterType="com.example.entity.Report" useGeneratedKeys="true" keyProperty="id">
+        insert into report
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="id != null">id,</if>
+            <if test="type != null">type,</if>
+            <if test="title != null">title,</if>
+            <if test="content != null">content,</if>
+            <if test="contactName != null">contact_name,</if>
+            <if test="contactPhone != null">contact_phone,</if>
+            <if test="address != null">address,</if>
+            <if test="suspectPhone != null">suspect_phone,</if>
+            <if test="suspectAccount != null">suspect_account,</if>
+            <if test="suspectLink != null">suspect_link,</if>
+            <if test="evidence != null">evidence,</if>
+            <if test="amount != null">amount,</if>
+            <if test="reportTime != null">report_time,</if>
+            <if test="status != null">status,</if>
+            <if test="handler != null">handler,</if>
+            <if test="handleResult != null">handle_result,</if>
+            <if test="handleTime != null">handle_time,</if>
+            <if test="userId != null">user_id,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="id != null">#{id},</if>
+            <if test="type != null">#{type},</if>
+            <if test="title != null">#{title},</if>
+            <if test="content != null">#{content},</if>
+            <if test="contactName != null">#{contactName},</if>
+            <if test="contactPhone != null">#{contactPhone},</if>
+            <if test="address != null">#{address},</if>
+            <if test="suspectPhone != null">#{suspectPhone},</if>
+            <if test="suspectAccount != null">#{suspectAccount},</if>
+            <if test="suspectLink != null">#{suspectLink},</if>
+            <if test="evidence != null">#{evidence},</if>
+            <if test="amount != null">#{amount},</if>
+            <if test="reportTime != null">#{reportTime},</if>
+            <if test="status != null">#{status},</if>
+            <if test="handler != null">#{handler},</if>
+            <if test="handleResult != null">#{handleResult},</if>
+            <if test="handleTime != null">#{handleTime},</if>
+            <if test="userId != null">#{userId},</if>
+        </trim>
+    </insert>
+
+    <delete id="deleteById" parameterType="Integer">
+        delete from report where id = #{id}
+    </delete>
+
+    <!-- 核心修复：status 强制更新 -->
+    <update id="updateById" parameterType="com.example.entity.Report">
+        update report
+        <set>
+            <if test="type != null">type = #{type},</if>
+            <if test="title != null">title = #{title},</if>
+            <if test="content != null">content = #{content},</if>
+            <if test="contactName != null">contact_name = #{contactName},</if>
+            <if test="contactPhone != null">contact_phone = #{contactPhone},</if>
+            <if test="address != null">address = #{address},</if>
+            <if test="suspectPhone != null">suspect_phone = #{suspectPhone},</if>
+            <if test="suspectAccount != null">suspect_account = #{suspectAccount},</if>
+            <if test="suspectLink != null">suspect_link = #{suspectLink},</if>
+            <if test="evidence != null">evidence = #{evidence},</if>
+            <if test="amount != null">amount = #{amount},</if>
+            <if test="reportTime != null">report_time = #{reportTime},</if>
+            status = #{status},
+            <if test="handler != null">handler = #{handler},</if>
+            <if test="handleResult != null">handle_result = #{handleResult},</if>
+            <if test="handleTime != null">handle_time = #{handleTime},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <select id="selectById" parameterType="Integer" resultType="com.example.entity.Report">
+        select <include refid="Base_Column_List"/> from report where id = #{id}
+    </select>
+
+    <select id="selectAll" resultType="com.example.entity.Report">
+        select <include refid="Base_Column_List"/> from report
+        <where>
+            <if test="type != null and type != ''">and type = #{type}</if>
+            <if test="title != null and title != ''">and title like concat('%', #{title}, '%')</if>
+            <if test="status != null and status != ''">and status = #{status}</if>
+            <if test="contactName != null and contactName != ''">and contact_name like concat('%', #{contactName}, '%')</if>
+            <if test="contactPhone != null and contactPhone != ''">and contact_phone like concat('%', #{contactPhone}, '%')</if>
+            <if test="userId != null">and user_id = #{userId}</if>
+        </where>
+        order by id desc
+    </select>
+
+</mapper>

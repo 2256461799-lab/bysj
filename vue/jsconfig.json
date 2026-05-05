@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "module": "esnext",
+    "baseUrl": "./",
+    // 👇 新增：静音 TS 6.0 弃用警告
+    "ignoreDeprecations": "6.0",
+    "lib": ["dom", "dom.iterable", "scripthost"]
+  }
+}

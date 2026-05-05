@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.mapper.LawMapper">
+
+    <sql id="Base_Column_List">
+        id,title,content,descr,cover,type,tags,author,publish_time,read_count,status
+    </sql>
+
+    <select id="selectAll" resultType="com.example.entity.Law">
+        select
+        <include refid="Base_Column_List" />
+        from law
+        <where>
+            <if test="title != null and title != ''">and title like concat('%', #{title}, '%')</if>
+            <if test="type != null and type != ''">and type = #{type}</if>
+            <if test="status != null and status != ''">and status = #{status}</if>
+            <if test="author != null and author != ''">and author like concat('%', #{author}, '%')</if>
+        </where>
+        order by id desc
+    </select>
+
+    <select id="selectById" resultType="com.example.entity.Law">
+        select
+        <include refid="Base_Column_List" />
+        from law
+        where id = #{id}
+    </select>
+
+    <delete id="deleteById">
+        delete from law
+        where id = #{id}
+    </delete>
+
+    <insert id="insert" parameterType="com.example.entity.Law" useGeneratedKeys="true" keyProperty="id">
+        insert into law
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="id != null">id,</if>
+            <if test="title != null">title,</if>
+            <if test="content != null">content,</if>
+            <if test="descr != null">descr,</if>
+            <if test="cover != null">cover,</if>
+            <if test="type != null">type,</if>
+            <if test="tags != null">tags,</if>
+            <if test="author != null">author,</if>
+            <if test="publishTime != null">publish_time,</if>
+            <if test="readCount != null">read_count,</if>
+            <if test="status != null">status,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="id != null">#{id},</if>
+            <if test="title != null">#{title},</if>
+            <if test="content != null">#{content},</if>
+            <if test="descr != null">#{descr},</if>
+            <if test="cover != null">#{cover},</if>
+            <if test="type != null">#{type},</if>
+            <if test="tags != null">#{tags},</if>
+            <if test="author != null">#{author},</if>
+            <if test="publishTime != null">#{publishTime},</if>
+            <if test="readCount != null">#{readCount},</if>
+            <if test="status != null">#{status},</if>
+        </trim>
+    </insert>
+
+    <update id="updateById" parameterType="com.example.entity.Law">
+        update law
+        <set>
+            <if test="title != null">title = #{title},</if>
+            <if test="content != null">content = #{content},</if>
+            <if test="descr != null">descr = #{descr},</if>
+            <if test="cover != null">cover = #{cover},</if>
+            <if test="type != null">type = #{type},</if>
+            <if test="tags != null">tags = #{tags},</if>
+            <if test="author != null">author = #{author},</if>
+            <if test="publishTime != null">publish_time = #{publishTime},</if>
+            <if test="readCount != null">read_count = #{readCount},</if>
+            <if test="status != null">status = #{status},</if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <update id="updateReadCount">
+        update law set read_count = read_count + 1 where id = #{id}
+    </update>
+
+</mapper>
+

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.mapper.LessonMapper">
+
+    <sql id="Base_Column_List">
+        id,chapter_id,title,descr,video_url,duration,cover,sort_order,status,create_time
+    </sql>
+
+    <insert id="insert" parameterType="com.example.entity.Lesson" useGeneratedKeys="true" keyProperty="id">
+        insert into lesson
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="id != null">id,</if>
+            <if test="chapterId != null">chapter_id,</if>
+            <if test="title != null">title,</if>
+            <if test="descr != null">descr,</if>
+            <if test="videoUrl != null">video_url,</if>
+            <if test="duration != null">duration,</if>
+            <if test="cover != null">cover,</if>
+            <if test="sortOrder != null">sort_order,</if>
+            <if test="status != null">status,</if>
+            <if test="createTime != null">create_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="id != null">#{id},</if>
+            <if test="chapterId != null">#{chapterId},</if>
+            <if test="title != null">#{title},</if>
+            <if test="descr != null">#{descr},</if>
+            <if test="videoUrl != null">#{videoUrl},</if>
+            <if test="duration != null">#{duration},</if>
+            <if test="cover != null">#{cover},</if>
+            <if test="sortOrder != null">#{sortOrder},</if>
+            <if test="status != null">#{status},</if>
+            <if test="createTime != null">#{createTime},</if>
+        </trim>
+    </insert>
+
+    <delete id="deleteById" parameterType="Integer">
+        delete from lesson
+        where id = #{id}
+    </delete>
+
+    <update id="updateById" parameterType="com.example.entity.Lesson">
+        update lesson
+        <set>
+            <if test="chapterId != null">chapter_id = #{chapterId},</if>
+            <if test="title != null">title = #{title},</if>
+            <if test="descr != null">descr = #{descr},</if>
+            <if test="videoUrl != null">video_url = #{videoUrl},</if>
+            <if test="duration != null">duration = #{duration},</if>
+            <if test="cover != null">cover = #{cover},</if>
+            <if test="sortOrder != null">sort_order = #{sortOrder},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <select id="selectById" parameterType="Integer" resultType="com.example.entity.Lesson">
+        select
+        <include refid="Base_Column_List"/>
+        from lesson
+        where id = #{id}
+    </select>
+
+    <select id="selectAll" resultType="com.example.entity.Lesson">
+        select
+        <include refid="Base_Column_List"/>
+        from lesson
+        <where>
+            <if test="chapterId != null">and chapter_id = #{chapterId}</if>
+            <if test="title != null and title != ''">and title like concat('%', #{title}, '%')</if>
+            <if test="status != null and status != ''">and status = #{status}</if>
+        </where>
+        order by chapter_id asc, sort_order asc, id desc
+    </select>
+
+</mapper>
+
+
+
+
+
+
+
+
