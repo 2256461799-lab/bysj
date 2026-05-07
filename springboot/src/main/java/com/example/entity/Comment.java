@@ -15,7 +15,6 @@ public class Comment {
     /** 根节点ID */
     private Integer rootId;
     /** 评论时间 */
-
     private String time;
     private List<Comment> children;
 

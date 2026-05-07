@@ -1,5 +1,4 @@
 package com.example.service;
-
 import cn.hutool.core.util.ObjectUtil;
 import com.example.common.enums.ResultCodeEnum;
 import com.example.common.enums.RoleEnum;
@@ -11,26 +10,25 @@ import com.example.utils.TokenUtils;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import javax.annotation.Resource;
-
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import java.util.List;
-
+import java.util.concurrent.TimeUnit;
 /**
  * 用户信息业务处理
  **/
 @Service
 public class UserService {
-
     @Resource
     private UserMapper userMapper;
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
     @Value("${server.port:9090}")
     private String port;
-
     @Value("${ip:localhost}")
     private String ip;
-
     /**
      * 新增
      */
@@ -56,14 +54,12 @@ public class UserService {
         user.setRole(RoleEnum.USER.name());
         userMapper.insert(user);
     }
-
     /**
      * 删除
      */
     public void deleteById(Integer id) {
         userMapper.deleteById(id);
     }
-
     /**
      * 批量删除
      */
@@ -72,28 +68,24 @@ public class UserService {
             userMapper.deleteById(id);
         }
     }
-
     /**
      * 修改
      */
     public void updateById(User user) {
         userMapper.updateById(user);
     }
-
     /**
      * 根据ID查询
      */
     public User selectById(Integer id) {
         return userMapper.selectById(id);
     }
-
     /**
      * 查询所有
      */
     public List<User> selectAll(User user) {
         return userMapper.selectAll(user);
     }
-
     /**
      * 分页查询
      */
@@ -102,7 +94,6 @@ public class UserService {
         List<User> list = userMapper.selectAll(user);
         return PageInfo.of(list);
     }
-
     /**
      * 用户登录
      */
@@ -128,7 +119,6 @@ public class UserService {
         BeanUtils.copyProperties(account, user);  // 拷贝 账号和密码2个属性
         this.add(user);  // 添加账户信息
     }
-
     /**
      * 修改密码
      */
@@ -143,5 +133,17 @@ public class UserService {
         dbUser.setPassword(account.getNewPassword());
         userMapper.updateById(dbUser);
     }
-
+    /**
+     * 获取用户总数（带Redis缓存，5分钟过期）
+     */
+    public Integer getUserCount() {
+        String key = "stats:userCount";
+        String count = stringRedisTemplate.opsForValue().get(key);
+        if (count != null) {
+            return Integer.valueOf(count);
+        }
+        Integer dbCount = userMapper.selectAll(null).size();
+        stringRedisTemplate.opsForValue().set(key, String.valueOf(dbCount), 5, TimeUnit.MINUTES);
+        return dbCount;
+    }
 }

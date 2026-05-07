@@ -1,5 +1,4 @@
 package com.example.service;
-
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.json.JSONArray;
@@ -14,19 +13,18 @@ import com.example.utils.TokenUtils;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import javax.annotation.Resource;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
 /**
  * 工作交流业务处理
  **/
 @Service
 public class BlogService {
-
     @Resource
     private BlogMapper blogMapper;
     @Resource
@@ -35,21 +33,20 @@ public class BlogService {
     private LikesService likesService;
     @Resource
     private CollectService collectService;
-
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
     /**
      * 新增
      */
     public void add(Blog blog) {
         blogMapper.insert(blog);
     }
-
     /**
      * 删除
      */
     public void deleteById(Integer id) {
         blogMapper.deleteById(id);
     }
-
     /**
      * 批量删除
      */
@@ -58,14 +55,12 @@ public class BlogService {
             blogMapper.deleteById(id);
         }
     }
-
     /**
      * 修改
      */
     public void updateById(Blog blog) {
         blogMapper.updateById(blog);
     }
-
     /**
      * 根据ID查询
      */
@@ -74,7 +69,7 @@ public class BlogService {
         if (blog == null) {
             return null;
         }
-        
+
         User user = userService.selectById(blog.getUserId());
         if (user != null) {
             List<Blog> userBlogList = blogMapper.selectUserBlog(user.getId());
@@ -86,7 +81,6 @@ public class BlogService {
                 Integer fid = b.getId();
                 int likesCount = likesService.selectByFidAndModule(fid, LikesModuleEnum.BLOG.getValue());
                 userLikesCount += likesCount;
-
                 int collectCount = collectService.selectByFidAndModule(fid, LikesModuleEnum.BLOG.getValue());
                 userCollectCount += collectCount;
             }
@@ -94,32 +88,28 @@ public class BlogService {
             user.setCollectCount(userCollectCount);
             blog.setUser(user);  // 设置作者信息
         }
-        
+
         // 查询当前博客的点赞数据
         int likesCount = likesService.selectByFidAndModule(id, LikesModuleEnum.BLOG.getValue());
         blog.setLikesCount(likesCount);
         Likes userLikes = likesService.selectUserLikes(id, LikesModuleEnum.BLOG.getValue());
         blog.setUserLike(userLikes != null);
-
         // 查询当前博客的收藏数据
         int collectCount = collectService.selectByFidAndModule(id, LikesModuleEnum.BLOG.getValue());
         blog.setCollectCount(collectCount);
         Collect userCollect = collectService.selectUserCollect(id, LikesModuleEnum.BLOG.getValue());
         blog.setUserCollect(userCollect != null);
-
 /*        // 更新博客浏览数据
         blog.setReadCount(blog.getReadCount() + 1);
         this.updateById(blog);*/
         return blog;
     }
-
     /**
      * 查询所有
      */
     public List<Blog> selectAll(Blog blog) {
         return blogMapper.selectAll(blog);
     }
-
     /**
      * 分页查询
      */
@@ -128,7 +118,6 @@ public class BlogService {
         List<Blog> list = blogMapper.selectAll(blog);
         return PageInfo.of(list);
     }
-
     public List<Blog> selectTop() {
         List<Blog> blogList = this.selectAll(null);
         blogList = blogList.stream().sorted((b1, b2) -> b2.getReadCount().compareTo(b1.getReadCount()))
@@ -136,8 +125,6 @@ public class BlogService {
                 .collect(Collectors.toList());
         return blogList;
     }
-
-
     //  Service
     public Set<Blog> selectRecommend(Integer blogId) {
         Blog blog = this.selectById(blogId);
@@ -160,12 +147,9 @@ public class BlogService {
         });
         return blogSet;
     }
-
     public void updateReadCount(Integer blogId) {
         blogMapper.updateReadCount(blogId);
     }
-
-
     public PageInfo<Blog> selectUser(Blog blog, Integer pageNum, Integer pageSize) {
         Account currentUser = TokenUtils.getCurrentUser();
         if (RoleEnum.USER.name().equals(currentUser.getRole())) {
@@ -174,10 +158,8 @@ public class BlogService {
         PageHelper.startPage(pageNum, pageSize);
         List<Blog> list = blogMapper.selectAll(blog);
         PageInfo<Blog> pageInfo = PageInfo.of(list);
-
         return pageInfo;
     }
-
     // 查询用户点赞的数据
     public PageInfo<Blog> selectLike(Blog blog, Integer pageNum, Integer pageSize) {
         Account currentUser = TokenUtils.getCurrentUser();
@@ -194,7 +176,6 @@ public class BlogService {
         }
         return pageInfo;
     }
-
     public PageInfo<Blog> selectCollect(Blog blog, Integer pageNum, Integer pageSize) {
         Account currentUser = TokenUtils.getCurrentUser();
         if (RoleEnum.USER.name().equals(currentUser.getRole())) {
@@ -210,7 +191,6 @@ public class BlogService {
         }
         return pageInfo;
     }
-
     public PageInfo<Blog> selectComment(Blog blog, Integer pageNum, Integer pageSize) {
         Account currentUser = TokenUtils.getCurrentUser();
         if (RoleEnum.USER.name().equals(currentUser.getRole())) {
@@ -225,5 +205,18 @@ public class BlogService {
             b.setLikesCount(likesCount);
         }
         return pageInfo;
+    }
+    /**
+     * 获取博客总数（带Redis缓存，5分钟过期）
+     */
+    public Integer getBlogCount() {
+        String key = "stats:blogCount";
+        String count = stringRedisTemplate.opsForValue().get(key);
+        if (count != null) {
+            return Integer.valueOf(count);
+        }
+        Integer dbCount = blogMapper.selectAll(null).size();
+        stringRedisTemplate.opsForValue().set(key, String.valueOf(dbCount), 5, TimeUnit.MINUTES);
+        return dbCount;
     }
 }

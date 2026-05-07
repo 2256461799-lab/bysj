@@ -11,6 +11,9 @@ import com.example.common.enums.ResultCodeEnum;
 import com.example.common.enums.RoleEnum;
 import com.example.entity.Account;
 import com.example.service.AdminService;
+import com.example.service.ActivityService;
+import com.example.service.BlogService;
+import com.example.service.ReportService;
 import com.example.service.UserService;
 import com.example.utils.TokenUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,14 +21,21 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 public class WebController {
-
     @Resource
     private AdminService adminService;
     @Resource
     private UserService userService;
+    @Resource
+    private BlogService blogService;
+    @Resource
+    private ActivityService activityService;
+    @Resource
+    private ReportService reportService;
 
     @GetMapping("/")
     public Result hello() {
@@ -33,8 +43,18 @@ public class WebController {
     }
 
     /**
-     * 登录（修复版：加了Token生成）
+     * 获取首页核心统计数据（Redis缓存，5分钟过期）
      */
+    @GetMapping("/stats/home")
+    public Result getHomeStats() {
+        Map<String, Integer> stats = new HashMap<>();
+        stats.put("userCount", userService.getUserCount());
+        stats.put("blogCount", blogService.getBlogCount());
+        stats.put("activityCount", activityService.getActivityCount());
+        stats.put("reportCount", reportService.getReportCount());
+        return Result.success(stats);
+    }
+
     @PostMapping("/login")
     public Result login(@RequestBody Account account) {
         if (ObjectUtil.isEmpty(account.getUsername()) || ObjectUtil.isEmpty(account.getPassword())
@@ -46,16 +66,12 @@ public class WebController {
         } else if (RoleEnum.USER.name().equals(account.getRole())) {
             account = userService.login(account);
         }
-        // 【新增】生成Token并设置回去
         String tokenData = account.getId() + "-" + account.getRole();
         String token = TokenUtils.createToken(tokenData, account.getPassword());
         account.setToken(token);
         return Result.success(account);
     }
 
-    /**
-     * 注册
-     */
     @PostMapping("/register")
     public Result register(@RequestBody Account account) {
         if (StrUtil.isBlank(account.getUsername()) || StrUtil.isBlank(account.getPassword())
@@ -70,9 +86,6 @@ public class WebController {
         return Result.success();
     }
 
-    /**
-     * 修改密码
-     */
     @PutMapping("/updatePassword")
     public Result updatePassword(@RequestBody Account account) {
         if (StrUtil.isBlank(account.getUsername()) || StrUtil.isBlank(account.getPassword())
@@ -86,5 +99,4 @@ public class WebController {
         }
         return Result.success();
     }
-
 }

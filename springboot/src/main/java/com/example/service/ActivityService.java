@@ -1,5 +1,4 @@
 package com.example.service;
-
 import cn.hutool.core.date.DateUtil;
 import com.example.common.enums.LikesModuleEnum;
 import com.example.common.enums.RoleEnum;
@@ -9,18 +8,17 @@ import com.example.utils.TokenUtils;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import javax.annotation.Resource;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
 /**
  * 活动业务处理
  **/
 @Service
 public class ActivityService {
-
     @Resource
     private ActivityMapper activityMapper;
     @Resource
@@ -29,22 +27,20 @@ public class ActivityService {
     private CollectService collectService;
     @Resource
     private ActivitySignService activitySignService;
-
-
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
     /**
      * 新增
      */
     public void add(Activity activity) {
         activityMapper.insert(activity);
     }
-
     /**
      * 删除
      */
     public void deleteById(Integer id) {
         activityMapper.deleteById(id);
     }
-
     /**
      * 批量删除
      */
@@ -53,29 +49,24 @@ public class ActivityService {
             activityMapper.deleteById(id);
         }
     }
-
     /**
      * 修改
      */
     public void updateById(Activity activity) {
         activityMapper.updateById(activity);
     }
-
     /**
      * 根据ID查询
      */
     public Activity selectById(Integer id) {
         Activity activity = activityMapper.selectById(id);
         this.setAct(activity, TokenUtils.getCurrentUser());
-
         int likesCount = likesService.selectByFidAndModule(id, LikesModuleEnum.ACTIVITY.getValue());
         int collectCount = collectService.selectByFidAndModule(id, LikesModuleEnum.ACTIVITY.getValue());
         activity.setLikesCount(likesCount);
         activity.setCollectCount(collectCount);
-
         Likes likes = likesService.selectUserLikes(id, LikesModuleEnum.ACTIVITY.getValue());
         activity.setIsLike(likes != null);
-
         Collect collect = collectService.selectUserCollect(id, LikesModuleEnum.ACTIVITY.getValue());
         activity.setIsCollect(collect != null);
         return activity;
@@ -90,14 +81,12 @@ public class ActivityService {
         ActivitySign activitySign = activitySignService.selectByActivityIdAndUserId(act.getId(), currentUser.getId());
         act.setIsSign(activitySign != null);
     }
-
     /**
      * 查询所有
      */
     public List<Activity> selectAll(Activity activity) {
         return  activityMapper.selectAll(activity);
     }
-
     /**
      * 分页查询
      */
@@ -111,7 +100,6 @@ public class ActivityService {
         }
         return pageInfo;
     }
-
     /**
      * 热门活动
      */
@@ -122,11 +110,9 @@ public class ActivityService {
                 .collect(Collectors.toList());
         return activityList;
     }
-
     public void updateReadCount(Integer activityId) {
         activityMapper.updateReadCount(activityId);
     }
-
     // 查询出用户报名的活动列表
     public PageInfo<Activity> selectUser(Activity activity, Integer pageNum, Integer pageSize) {
         Account currentUser = TokenUtils.getCurrentUser();
@@ -142,7 +128,6 @@ public class ActivityService {
         }
         return pageInfo;
     }
-
     public PageInfo<Activity> selectLike(Activity activity, Integer pageNum, Integer pageSize) {
         Account currentUser = TokenUtils.getCurrentUser();
         if (RoleEnum.USER.name().equals(currentUser.getRole())) {
@@ -157,7 +142,6 @@ public class ActivityService {
         }
         return pageInfo;
     }
-
     public PageInfo<Activity> selectCollect(Activity activity, Integer pageNum, Integer pageSize) {
         Account currentUser = TokenUtils.getCurrentUser();
         if (RoleEnum.USER.name().equals(currentUser.getRole())) {
@@ -172,7 +156,6 @@ public class ActivityService {
         }
         return pageInfo;
     }
-
     public PageInfo<Activity> selectComment(Activity activity, Integer pageNum, Integer pageSize) {
         Account currentUser = TokenUtils.getCurrentUser();
         if (RoleEnum.USER.name().equals(currentUser.getRole())) {
@@ -186,5 +169,18 @@ public class ActivityService {
             this.setAct(act, currentUser);
         }
         return pageInfo;
+    }
+    /**
+     * 获取活动总数（带Redis缓存，5分钟过期）
+     */
+    public Integer getActivityCount() {
+        String key = "stats:activityCount";
+        String count = stringRedisTemplate.opsForValue().get(key);
+        if (count != null) {
+            return Integer.valueOf(count);
+        }
+        Integer dbCount = activityMapper.selectAll(null).size();
+        stringRedisTemplate.opsForValue().set(key, String.valueOf(dbCount), 5, TimeUnit.MINUTES);
+        return dbCount;
     }
 }
